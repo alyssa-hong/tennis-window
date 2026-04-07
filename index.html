@@ -90,7 +90,7 @@
     z-index: 4;
   }
 
-  /* centre net line */
+  /* center net line */
   #net {
     position: absolute;
     left: 50%;
@@ -115,7 +115,7 @@
     pointer-events: none;
     z-index: 3;
   }
-
+/* ball */
   #ball {
     position: absolute;
     width: 12px; height: 12px;
@@ -138,13 +138,13 @@
     z-index: 6;
   }
 
-  /* ai paddle — warm coral so it feels like "someone else" */
+  /* ai paddle */
   #ai-paddle {
     position: absolute;
     width: 8px; height: 50px;
-    background: #f4a26a;
+    background: #f46a6a;
     border-radius: 5px;
-    border: 1.5px solid #c9a84c;
+    border: 1.5px solid #fbc121;
     box-shadow: -1px 0 6px rgba(0,0,0,0.25);
     pointer-events: none;
     z-index: 6;
@@ -293,7 +293,7 @@
   }
 
   function updateAI(spd) {
-    // Always track the ball's Y perfectly (guaranteed hit)
+    // Always track the ball's Y perfectly (a guaranteed hit)
     // but move at a capped speed so fast balls feel tense
     const aiMoveSpeed = Math.min(spd * 1.05, MAX_SPD * 1.1); // always fast enough
 
@@ -392,7 +392,7 @@
       if (Math.abs(vel.y) < 0.4) vel.y = 0.4 * (vel.y >= 0 ? 1 : -1);
     }
 
-    // --- miss detection (only player can miss) ---
+    // --- miss detection (only YOU can miss) ---
     if (ball.x + BALL_R < 0) {
       endGame(elapsed);
     }
