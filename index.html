@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Tennis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: transparent;
+    overflow: hidden;
+    width: 280px;
+    height: 260px;
+    font-family: 'Nunito', sans-serif;
+    -webkit-app-region: no-drag;
+  }
+
+  #game-wrap {
+    width: 280px;
+    height: 260px;
+    background: #1e3d1a;
+    border-radius: 14px;
+    border: 2px solid #c9a84c;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #titlebar {
+    background: #2d5a27;
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #c9a84c;
+    -webkit-app-region: drag;
+    cursor: move;
+  }
+
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #dot-close {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #ff5f57;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+  }
+  #dot-close:hover { background: #ff3b30; }
+
+  #title-text {
+    font-size: 12px;
+    color: #e8d5a3;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  #timer-display {
+    font-size: 13px;
+    color: #f5f5f0;
+    font-weight: 700;
+    -webkit-app-region: no-drag;
+  }
+
+  #court {
+    position: relative;
+    width: 280px;
+    height: 218px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #3a6b35 0px, #3a6b35 18px,
+      #336030 18px, #336030 36px
+    );
+    cursor: none;
+    overflow: hidden;
+  }
+
+  /* court boundary */
+  #court::before {
+    content: '';
+    position: absolute;
+    inset: 10px 14px;
+    border: 1.5px solid rgba(245,245,240,0.3);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* centre net line */
+  #net {
+    position: absolute;
+    left: 50%;
+    top: 0; bottom: 0;
+    width: 3px;
+    margin-left: -1px;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(245,245,240,0.55) 0px, rgba(245,245,240,0.55) 6px,
+      transparent 6px, transparent 10px
+    );
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* player zone hint */
+  #player-zone {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 130px;
+    background: rgba(255,255,255,0.03);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  #ball {
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #ccdd33;
+    border-radius: 50%;
+    box-shadow: inset -2px -1px 0 rgba(0,0,0,0.2), 0 1px 4px rgba(0,0,0,0.4);
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  /* player paddle — cream/gold */
+  #paddle {
+    position: absolute;
+    width: 8px; height: 50px;
+    background: #f5f5f0;
+    border-radius: 5px;
+    border: 1.5px solid #c9a84c;
+    box-shadow: 1px 0 6px rgba(0,0,0,0.25);
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  /* ai paddle — warm coral so it feels like "someone else" */
+  #ai-paddle {
+    position: absolute;
+    width: 8px; height: 50px;
+    background: #f4a26a;
+    border-radius: 5px;
+    border: 1.5px solid #c9a84c;
+    box-shadow: -1px 0 6px rgba(0,0,0,0.25);
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(30, 61, 26, 0.93);
+    gap: 5px;
+    z-index: 10;
+  }
+
+  #overlay .icon { font-size: 24px; line-height: 1; margin-bottom: 2px; }
+
+  #overlay h2 {
+    font-size: 16px;
+    color: #e8d5a3;
+    font-weight: 700;
+  }
+
+  .score-line {
+    font-size: 32px;
+    color: #f5f5f0;
+    font-weight: 700;
+  }
+
+  .sub {
+    font-size: 11px;
+    color: rgba(245,245,240,0.6);
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  .best-line {
+    font-size: 11px;
+    color: rgba(232,213,163,0.55);
+  }
+  .best-line span { color: #e8d5a3; }
+
+  .who-missed {
+    font-size: 12px;
+    color: rgba(244,162,106,0.85);
+    font-weight: 600;
+  }
+
+  button {
+    margin-top: 8px;
+    padding: 6px 22px;
+    background: #3a6b35;
+    border: 1.5px solid #c9a84c;
+    color: #e8d5a3;
+    border-radius: 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button:hover { background: #4a7a44; }
+  button:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+  <div id="titlebar">
+    <div class="left">
+      <div id="dot-close"></div>
+      <span id="title-text">🎾 Window Tennis</span>
+    </div>
+    <span id="timer-display">0.0s</span>
+  </div>
+  <div id="court">
+    <div id="player-zone"></div>
+    <div id="net"></div>
+    <div id="ball"></div>
+    <div id="paddle"></div>
+    <div id="ai-paddle"></div>
+    <div id="overlay">
+      <div class="icon">🎾</div>
+      <h2>Window Tennis</h2>
+      <div class="sub">you're on the left 🟡<br>your opponent is on the right 🟠</div>
+      <div class="sub" style="margin-top:6px;">press <strong>space</strong> to serve</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const court     = document.getElementById('court');
+  const ballEl    = document.getElementById('ball');
+  const paddleEl  = document.getElementById('paddle');
+  const aiEl      = document.getElementById('ai-paddle');
+  const overlay   = document.getElementById('overlay');
+  const timerEl   = document.getElementById('timer-display');
+
+  const W = 280, H = 218;
+  const BALL_R = 6;
+  const PADDLE_W = 8, PADDLE_H = 50;
+  const PLAYER_ZONE = 130;   // player roams x: 0–130
+  const AI_ZONE_START = 150; // ai roams x: 150–(W-PADDLE_W)
+  const BASE_SPD = 3.2, MAX_SPD = 6.8;
+
+  let ball, vel, paddleX, paddleY, aiX, aiY;
+  let running, startTime, animId, best = 0;
+
+  // AI movement targets
+  let aiTargetX, aiTargetY;
+
+  function fmt(ms) { return (ms / 1000).toFixed(1) + 's'; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function init(autoStart) {
+    cancelAnimationFrame(animId);
+    ball = { x: W / 2, y: H / 2 };
+    const angle = (Math.random() * 0.4 + 0.1) * Math.PI;
+    vel = {
+      x: -Math.cos(angle) * BASE_SPD,
+      y:  Math.sin(angle) * BASE_SPD * (Math.random() > 0.5 ? 1 : -1)
+    };
+    paddleX = 14;
+    paddleY = H / 2;
+    aiX     = W - PADDLE_W - 14;
+    aiY     = H / 2;
+    aiTargetX = aiX;
+    aiTargetY = aiY;
+    running = false;
+    startTime = null;
+    timerEl.textContent = '0.0s';
+    render();
+    if (autoStart) {
+      overlay.style.display = 'none';
+      running = true;
+      startTime = performance.now();
+      loop();
+    }
+  }
+
+  function loop() {
+    if (!running) return;
+    update();
+    render();
+    animId = requestAnimationFrame(loop);
+  }
+
+  function updateAI(spd) {
+    // Always track the ball's Y perfectly (guaranteed hit)
+    // but move at a capped speed so fast balls feel tense
+    const aiMoveSpeed = Math.min(spd * 1.05, MAX_SPD * 1.1); // always fast enough
+
+    // Y: chase ball directly — no error, guaranteed intercept
+    const dy = ball.y - aiY;
+    if (Math.abs(dy) > 0.5) {
+      aiY += Math.sign(dy) * Math.min(Math.abs(dy), aiMoveSpeed);
+    }
+    aiY = clamp(aiY, PADDLE_H / 2, H - PADDLE_H / 2);
+
+    // X: move freely within its zone for style
+    // When ball is coming toward AI, rush forward to meet it
+    // When ball is going away, retreat to a random deep position
+    if (vel.x > 0) {
+      // ball heading AI's way — intercept at a good X position
+      // predict roughly where ball will be when it arrives
+      const timeToAI = Math.max(1, (aiX - ball.x) / Math.max(vel.x, 0.1));
+      const predictY = clamp(ball.y + vel.y * timeToAI * 0.3, PADDLE_H / 2, H - PADDLE_H / 2);
+      // aim to be close to ball's predicted X but stay in zone
+      aiTargetX = clamp(ball.x + 40, AI_ZONE_START, W - PADDLE_W - 8);
+      aiTargetY = predictY; // refine Y target with prediction
+    } else {
+      // ball going away — drift back to a relaxed position near right edge
+      aiTargetX = W - PADDLE_W - 14 + (Math.random() - 0.5) * 10;
+      // gentle drift in Y toward centre
+      aiTargetY = H / 2 + (Math.random() - 0.5) * 20;
+    }
+
+    // Smooth X movement
+    const dxAI = aiTargetX - aiX;
+    const aiXSpeed = Math.min(Math.abs(dxAI), spd * 0.8);
+    if (Math.abs(dxAI) > 1) aiX += Math.sign(dxAI) * aiXSpeed;
+    aiX = clamp(aiX, AI_ZONE_START, W - PADDLE_W - 8);
+  }
+
+  function update() {
+    const now     = performance.now();
+    const elapsed = now - startTime;
+    timerEl.textContent = fmt(elapsed);
+
+    // speed ramp over time
+    let spd = Math.hypot(vel.x, vel.y);
+    if (spd < MAX_SPD) {
+      const boost = 1 + elapsed / 60000;
+      vel.x *= boost; vel.y *= boost;
+      spd = Math.hypot(vel.x, vel.y);
+      if (spd > MAX_SPD) {
+        vel.x = vel.x / spd * MAX_SPD;
+        vel.y = vel.y / spd * MAX_SPD;
+        spd = MAX_SPD;
+      }
+    }
+
+    updateAI(spd);
+
+    ball.x += vel.x;
+    ball.y += vel.y;
+
+    // top / bottom walls
+    if (ball.y - BALL_R < 0)  { ball.y = BALL_R;     vel.y =  Math.abs(vel.y); }
+    if (ball.y + BALL_R > H)  { ball.y = H - BALL_R; vel.y = -Math.abs(vel.y); }
+
+    // --- player paddle collision ---
+    const pRight = paddleX + PADDLE_W;
+    const pTop   = paddleY - PADDLE_H / 2;
+    const pBot   = paddleY + PADDLE_H / 2;
+    if (
+      vel.x < 0 &&
+      ball.x - BALL_R <= pRight &&
+      ball.x + BALL_R >= paddleX &&
+      ball.y + BALL_R >= pTop &&
+      ball.y - BALL_R <= pBot
+    ) {
+      ball.x = pRight + BALL_R + 1;
+      vel.x  = Math.abs(vel.x);
+      const hit = (ball.y - paddleY) / (PADDLE_H / 2);
+      vel.y = hit * spd * 0.9;
+      if (Math.abs(vel.y) < 0.4) vel.y = 0.4 * (vel.y >= 0 ? 1 : -1);
+    }
+
+    // --- ai paddle collision ---
+    const aLeft = aiX;
+    const aTop  = aiY - PADDLE_H / 2;
+    const aBot  = aiY + PADDLE_H / 2;
+    if (
+      vel.x > 0 &&
+      ball.x + BALL_R >= aLeft &&
+      ball.x - BALL_R <= aiX + PADDLE_W &&
+      ball.y + BALL_R >= aTop &&
+      ball.y - BALL_R <= aBot
+    ) {
+      ball.x = aLeft - BALL_R - 1;
+      vel.x  = -Math.abs(vel.x);
+      const hit = (ball.y - aiY) / (PADDLE_H / 2);
+      vel.y = hit * spd * 0.9;
+      if (Math.abs(vel.y) < 0.4) vel.y = 0.4 * (vel.y >= 0 ? 1 : -1);
+    }
+
+    // --- miss detection (only player can miss) ---
+    if (ball.x + BALL_R < 0) {
+      endGame(elapsed);
+    }
+    // safety: ball exits right (shouldn't happen but just in case)
+    if (ball.x - BALL_R > W) {
+      ball.x = W - BALL_R - 1;
+      vel.x = -Math.abs(vel.x);
+    }
+  }
+
+  function render() {
+    const py = clamp(paddleY, PADDLE_H / 2, H - PADDLE_H / 2);
+    paddleEl.style.left = clamp(paddleX, 0, PLAYER_ZONE - PADDLE_W) + 'px';
+    paddleEl.style.top  = (py - PADDLE_H / 2) + 'px';
+
+    aiEl.style.left = Math.round(aiX) + 'px';
+    aiEl.style.top  = Math.round(aiY - PADDLE_H / 2) + 'px';
+
+    ballEl.style.left = Math.round(ball.x - BALL_R) + 'px';
+    ballEl.style.top  = Math.round(ball.y - BALL_R) + 'px';
+  }
+
+  function endGame(elapsed) {
+    running = false;
+    cancelAnimationFrame(animId);
+    if (elapsed > best) best = elapsed;
+    overlay.innerHTML = `
+      <div class="icon">😅</div>
+      <h2>Rally over!</h2>
+      <div class="score-line">${fmt(elapsed)}</div>
+      <div class="sub">rally time</div>
+      <div class="best-line">best: <span>${fmt(best)}</span></div>
+      <div class="sub" style="margin-top:6px;">press <strong>space</strong> to serve again</div>
+    `;
+    overlay.style.display = 'flex';
+  }
+
+  // Cache court position — only recalc on resize, not every mousemove
+  let courtRect = court.getBoundingClientRect();
+  window.addEventListener('resize', () => { courtRect = court.getBoundingClientRect(); });
+
+  court.addEventListener('mousemove', e => {
+    const mx = e.clientX - courtRect.left;
+    const my = e.clientY - courtRect.top;
+    paddleY = my;
+    if (mx < PLAYER_ZONE) paddleX = mx - PADDLE_W / 2;
+  });
+
+  court.addEventListener('touchmove', e => {
+    e.preventDefault();
+    paddleX = e.touches[0].clientX - courtRect.left - PADDLE_W / 2;
+    paddleY = e.touches[0].clientY - courtRect.top;
+  }, { passive: false });
+
+  document.getElementById('dot-close').addEventListener('click', () => window.close());
+
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !running) {
+      e.preventDefault();
+      init(true);
+    }
+  });
+
+  init(false);
+</script>
+</body>
+</html>
